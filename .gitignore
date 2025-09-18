@@ -1,3 +1,5 @@
 *env/
 .vscode/
 .env
+__pycache__
+media/faiss_index/*

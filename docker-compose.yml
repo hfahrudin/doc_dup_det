@@ -10,4 +10,6 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     env_file:
-      - .env.example  # or specify another file like ./config/agent.env
+      - .env  # or ./config/agent.env
+    volumes:
+      - ./app:/app  # Use relative path to project folder
