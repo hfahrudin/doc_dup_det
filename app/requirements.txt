@@ -1,0 +1,7 @@
+langchain-openai
+langchain
+langchain-community
+langchain-core
+python-dotenv
+faiss-cpu
+unstructured[local-inference,pdf,excel,email,doc,ppt,html,image]
