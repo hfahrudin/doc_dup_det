@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  dup_dep_service:
+    build:
+      context: ./app  # Path to your agent service
+    ports:
+      - "8000:8000"
+    container_name: hap_dup_det_service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env.example  # or specify another file like ./config/agent.env
