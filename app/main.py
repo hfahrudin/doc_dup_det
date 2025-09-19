@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, JSONResponse
 from dotenv import load_dotenv
 from schema import AddContentRequest, DeleteContentRequest, InvokeRequest
-from kb import KnowledgeBaseManager
+from core import KnowledgeBaseManager
 load_dotenv()
 
 # Initialize FastAPI app
@@ -34,7 +34,6 @@ async def add_knowledge(request: AddContentRequest):
         content=response,
         status_code=200
     )
-
 
 # Delete content from knowledge base
 @app.post("/api/delete")
