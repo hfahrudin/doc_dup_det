@@ -37,8 +37,7 @@ A custom function evaluates candidate content similarity more accurately by cons
 2. Build and run using Docker Compose:
 
   ```bash
-      docker compose -f docker-compose.yml up --build -d
+  docker compose -f docker-compose.yml up --build -d
    ```
 3. Access the API at: http://localhost:8000
 
-For further documentation and to test endpoints interactively, visit:
