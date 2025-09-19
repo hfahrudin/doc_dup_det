@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import List
+from typing import List, Optional
 
 # Supported content types
-SUPPORTED_TYPES = ["qna", "user guide"]
+SUPPORTED_TYPES = ["qna", "user_guide", "blog"]
 
 # =========================
 # Request models
@@ -10,9 +10,8 @@ SUPPORTED_TYPES = ["qna", "user guide"]
 
 class AddContentRequest(BaseModel):
     content: str = Field(..., description="The text content to be added.")
-    category: str = Field(..., description="Category under which the content should be indexed (e.g., FAQ, User Guide).")
+    category: str = Field(..., description="Category under which the content should be indexed (e.g., Lifestyle, Technology).")
     type: str = Field(..., description="Type of content. Supported values: 'qna', 'user guide'. Must be lowercase.")
-    language: str = Field(..., description="Language of the content (e.g., 'en', 'fr').")
 
     @field_validator("type")
     @classmethod
@@ -29,9 +28,13 @@ class DeleteContentRequest(BaseModel):
 
 class InvokeRequest(BaseModel):
     content: str = Field(..., description="The content/query to process or search for.")
-    category: str = Field(..., description="Category to use for indexing or searching (e.g., FAQ, User Guide).")
+    category: str = Field(..., description="Category under which the content should be indexed (e.g., Lifestyle, Technology).")
     type: str = Field(..., description="Type of the content. Supported values: 'qna', 'user guide'. Must be lowercase.")
-    language: str = Field(..., description="Language of the content/query (e.g., 'en', 'fr').")
+    
+
+    top_docs: Optional[int] = Field(5, description="Number of top documents to keep after accumulation.")
+    top_nchunk: Optional[int] = Field(10, description="Number of top chunks to consider from the input content.")
+    top_k: Optional[int] = Field(3, description="Number of nearest neighbors to retrieve per chunk.")
 
     @field_validator("type")
     @classmethod

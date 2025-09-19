@@ -50,7 +50,7 @@ async def delete_knowledge(request: DeleteContentRequest):
 async def invoke(request: InvokeRequest):
     response = await kb_manager.duplicate_search(request)
     return JSONResponse(
-        content={"message": "Content search", "content": request.content},
+        content=response,
         status_code=200
     )
 

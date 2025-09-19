@@ -4,7 +4,10 @@ import os
 from typing import List
 from langchain.docstore.document import Document
 from schema import *
-from chunking import chunk_content_semantic, chunk_content_metadata
+from chunking import chunk_content_semantic, chunk_content_token
+from grader import score_md_chunk
+
+import numpy as np
 
 KB_FOLDER_DEFAULT = "media/faiss_index"
 
@@ -33,7 +36,7 @@ class KnowledgeBaseManager:
         Returns the new document ID and status.
         """
  
-        docs, doc_id_base = chunk_content_semantic(payload, self.embeddings)
+        docs, doc_id_base = await chunk_content_semantic(payload, self.embeddings)
 
 
         self.vectorstore.add_documents(docs)
@@ -54,8 +57,141 @@ class KnowledgeBaseManager:
         """
         Simple similarity search.
         """
-        return ""
+        category = payload.category
+        top_docs = payload.top_docs      # ✅ Number of final docs to keep
+        top_nchunk = payload.top_nchunk  # ✅ Number of chunks to consider
+        top_k = payload.top_k    
+
+        all_docs = {}
+        #=================== FAST ===================
+
+        # Score each chunk
+        chunks = await chunk_content_token(payload)
+        total_chunks = len(chunks)
+
+        chunk_scores = [
+            (chunk, score_md_chunk(chunk, i, total_chunks))
+            for i, chunk in enumerate(chunks)
+        ]
+
+        # Sort by score, descending
+        chunk_scores.sort(key=lambda x: x[1], reverse=True)
+        top_chunks = chunk_scores[:top_nchunk]
+
+        for chunk, _ in top_chunks:
+
+        #=================== SEMANTIC ===================
+        # docs, doc_id_base = chunk_content_semantic(payload, self.embeddings)
+        # top_chunks = [d.page_content for d in docs]
+        # for chunk in top_chunks:
+
+
+        # for chunk, _ in top_chunks:
+            results = await self.vectorstore.asimilarity_search_with_relevance_scores(
+                chunk,  # searching using the chunk content
+                k=top_k,    # top 5 similar items
+                filter={"category": category}
+            )
+
+            # Attach chunk score to results
+            for result_content, similarity_score in results:
+                docs_id = result_content.metadata.get("id")
+
+                if docs_id not in all_docs:
+                    all_docs[docs_id] = {
+                        "accumulated_score": float(similarity_score),
+                        "chunk": [result_content.metadata.get("chunk_index")]
+                    }
+                else:
+                    all_docs[docs_id]["accumulated_score"]+=float(similarity_score)
+                    all_docs[docs_id]["chunk"].append(result_content.metadata.get("chunk_index"))
+
+        sorted_docs = sorted(
+            all_docs.items(),
+            key=lambda x: x[1]["accumulated_score"],
+            reverse=True
+        )
+
+        similar_docs_candidate = dict(sorted_docs[:top_docs])
+
+        target_vector = [self.embeddings.embed_query(c[0]) for c in top_chunks] 
+
+        candidates = {}
+        for d in similar_docs_candidate.keys():
+            doc_sim_score = await self.evaluate_candidate(target_vector, d)
+            candidates[d] = doc_sim_score
+        return candidates
     
+    async def evaluate_candidate(self, target_vector, candidate_id):
+        #TODO:Better find a way to optimize chunked stuff
+        
+        candidate_vector = []
+
+        # FAISS index stores vectors in the same order as docstore keys
+        for faiss_id, docstore_id in self.vectorstore.index_to_docstore_id.items():
+            doc = self.vectorstore.docstore.search(docstore_id)
+            if doc.metadata.get("id") == candidate_id:
+                # Step 2: reconstruct vector using FAISS ID
+                vec = self.vectorstore.index.reconstruct(faiss_id)
+                candidate_vector.append(vec)
+
+        if not candidate_vector:
+            print("No candidate vectors found")
+            return 0.0  # or handle as needed
+
+
+        return self.symmetric_overlap_func(target_vector, candidate_vector)
+
+    def symmetric_overlap_func(self, target_vector, candidate_vector):
+        """
+        Compute the symmetric overlap similarity between two sets of vectors.
+
+        Args:
+            target_vector (list or np.ndarray): list of N vectors representing the target document/chunks.
+            candidate_vector (list or np.ndarray): list of M vectors representing the candidate document/chunks.
+
+        Returns:
+            float: symmetric overlap score between 0 and 1, higher means more similar.
+
+        Explanation:
+            1. Converts the input lists to NumPy arrays for efficient computation.
+            2. Normalizes all vectors to unit length so that dot product equals cosine similarity.
+            3. Computes the full cosine similarity matrix of shape [N x M], where each entry [i, j] is 
+            the similarity between target chunk i and candidate chunk j.
+            4. For each target chunk, finds the maximum similarity with any candidate chunk.
+            5. For each candidate chunk, finds the maximum similarity with any target chunk.
+            6. Averages these maximum similarities in both directions (target → candidate and 
+            candidate → target) and takes 0.5 * sum to get a symmetric overlap score.
+            - Symmetric overlap is important because it ensures that both sets “match” each other,
+                avoiding bias if one set is larger or has unmatched chunks.
+            7. Returns a single float representing overall similarity.
+
+        Note:
+            - This method naturally handles different numbers of chunks in the target and candidate.
+            - Symmetric overlap is widely used in semantic search and multi-chunk embedding comparisons
+            to give a fair and balanced similarity measure.
+        """
+
+        
+        
+        target_matrix = np.array(target_vector)       # shape: [N, dim]
+        candidate_matrix = np.array(candidate_vector) # shape: [M, dim]
+
+        # normalize vectors
+        target_norm = target_matrix / np.linalg.norm(target_matrix, axis=1, keepdims=True)
+        candidate_norm = candidate_matrix / np.linalg.norm(candidate_matrix, axis=1, keepdims=True)
+
+        # cosine similarity matrix: [N x M]
+        cos_sim_matrix = target_norm @ candidate_norm.T
+
+        # compute symmetric overlap
+        max_target_to_candidate = np.max(cos_sim_matrix, axis=1)  # length N
+        max_candidate_to_target = np.max(cos_sim_matrix, axis=0)  # length M
+
+        symmetric_overlap = 0.5 * (np.mean(max_target_to_candidate) + np.mean(max_candidate_to_target))
+        return symmetric_overlap
+
+
 
     async def get_all_documents(self):
         """
@@ -70,7 +206,7 @@ class KnowledgeBaseManager:
                 "id": doc.metadata.get("id"),
                 "content": doc.page_content,
                 "category": doc.metadata.get("category"),
-                "tags": doc.metadata.get("type")
+                "chunk_index": doc.metadata.get("chunk_index")
             }
             for doc in all_docs
             if doc.metadata.get("id") != "dummy"  # ignore dummy doc
