@@ -4,7 +4,7 @@ This prototype detects potential duplicate content using embeddings and similari
 ## Overview
 
 ### Optimized Inference
-New content embeddings and chunking are guided by a metadata-based rule system for faster processing. By leveraging metadata, the system focuses on relevant parts of the content, making it **faster than fully embedding-based chunking** while still being **more accurate than blind, uniform chunking** that ignores content structure or category.
+New content embeddings and chunking are guided by a metadata-based rule system for faster processing. By leveraging metadata, the system focuses on relevant parts of the content, making it **cheaper and possibly faster than fully Semantic-based chunking** while still being **more accurate than blind, uniform chunking** that ignores content structure or category.
 
 ### Candidate Selection Strategy
 Similarity scores are aggregated across candidates to identify the most likely duplicates efficiently. Aggregating scores across multiple chunks prevents single-chunk noise from dominating the similarity decision, providing more robust duplicate detection compared to selecting candidates based on a single highest score.
