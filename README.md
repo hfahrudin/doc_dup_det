@@ -1,4 +1,4 @@
-# hap_dup_det: Prototype Duplicate Detection Service
+# doc_dup_det: Prototype Duplicate Detection Service
 This prototype detects potential duplicate content using embeddings and similarity comparison. It is served as an API using **FastAPI**, fully **dockerized**, and uses **FAISS** as the vector store for simplicity.
 
 ## Overview
