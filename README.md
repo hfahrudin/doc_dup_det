@@ -37,7 +37,7 @@ graph TD
     
     C --> |Top-N Important Chunks| D[FAISS Vector Store];
     D --> |Candidate Documents| C;
-    C --> E(3. Symmetric Overlap Comparison);
+    C --> E(Symmetric Overlap Comparison);
     E --> F[Duplicate Decision & Scoring];
 ```
 
