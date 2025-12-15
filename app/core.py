@@ -2,7 +2,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 import os
 from typing import List
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 from schema import *
 from chunking import chunk_content_semantic, chunk_content_token
 from grader import score_md_chunk, symmetric_overlap_func

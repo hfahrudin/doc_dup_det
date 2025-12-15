@@ -1,12 +1,12 @@
 from langchain_openai import OpenAIEmbeddings
 from langchain_experimental.text_splitter import SemanticChunker
 from typing import List
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 import time
 from schema import *
 from unstructured.partition.md import partition_md
 from unstructured.cleaners.core import clean
-from langchain.text_splitter import TokenTextSplitter
+from langchain_text_splitters import TokenTextSplitter
 
 
 

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse, JSONResponse
+from fastapi.responses import PlainTextResponse, JSONResponse, FileResponse, RedirectResponse
 from dotenv import load_dotenv
 from schema import AddContentRequest, DeleteContentRequest, InvokeRequest
 from core import KnowledgeBaseManager
@@ -24,7 +24,11 @@ app.add_middleware(
 # Health check route
 @app.get("/")
 def read_root():
-    return PlainTextResponse(content="Healthy", status_code=200)
+    return RedirectResponse(url="/demo")
+
+@app.get("/demo")
+def demo():
+    return FileResponse('index.html')
 
 # Add content to knowledge base
 @app.post("/api/add")
