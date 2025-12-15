@@ -64,8 +64,8 @@ The API returns a list of top-k documents with corresponding similarity scores. 
 ### Running Locally
 1. Clone the repository:  
    ```bash
-   git clone <repo-url>
-   cd <repo-folder>
+   git clone https://github.com/hfahrudin/doc_dup_det.git
+   cd doc_dup_det
    ```
 2. Create .env file:
    - Create a `.env` file from the `.env.example` and add your OpenAI API key:
